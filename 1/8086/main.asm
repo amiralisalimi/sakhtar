@@ -3,9 +3,10 @@
 dseg    segment 'data'
 cr          equ 0Dh
 lf          equ 0Ah
+so          equ 0Eh
 num         dw  ?           ; Polynomial degree
-coeff_int   dw  100 dup(?)  ; Integer part of coeffs   
-coeff_flt   dw  100 dup(?)  ; Fraction part of coeffs
+coeff_int   dw  100 dup(0)  ; Integer part of coeffs   
+coeff_flt   dw  100 dup(0)  ; Fraction part of coeffs
 is_negative db  0           ; is negative flag
 ten         dw  10
 dseg    ends
@@ -27,7 +28,8 @@ start       proc    far
             mov     num, cx
             
             ; take n+1 input for coeffs
-            add     cx, 1    
+            add     cx, 1
+            call    nxt_line    
 scan_coeffs:
             call    scan_float     
             ; coeffs are words, index should be doubled     
@@ -35,6 +37,8 @@ scan_coeffs:
             add     bx, cx
             mov     coeff_int[bx -2], ax
             mov     coeff_flt[bx -2], dx
+            
+            call    nxt_line
             loop    scan_coeffs         
             
             ; scan is_int
@@ -56,8 +60,9 @@ multiply:
             ; store result in coeffs array
             mov     word ptr coeff_int[bx], ax
             mov     word ptr coeff_flt[bx], dx
-            
-            loop multiply
+                 
+            loop    multiply
+            jmp     print_result
 
 compute_integral:
             mov     cx, num
@@ -77,6 +82,7 @@ divide:
             
 print_result:
             mov     cx, num
+            call    nxt_line
 print_coeff:
             ; coeffs are words, index should be doubled
             mov     bx, cx
@@ -85,7 +91,8 @@ print_coeff:
             mov     ax, word ptr coeff_int[bx]
             mov     dx, word ptr coeff_flt[bx]
             call    print_float
-
+            
+            call    nxt_line
             loop    print_coeff
 
             mov     ah, 4Ch
@@ -100,7 +107,9 @@ start       endp
 ; dx : Fraction part
 ; cx : To be multiplied with
 mul_float   proc    near
-        ret ; TODO implement mul
+            imul    cx
+            xor     dx, dx
+            ret
 mul_float   endp
 
 
@@ -108,8 +117,10 @@ mul_float   endp
 ; ax : Integer part
 ; dx : Fraction part
 ; cx : To be divided by
-div_float   proc near
-        ret ; TODO implement div
+div_float   proc    near
+            idiv    cx
+            xor     dx, dx
+            ret
 div_float   endp
 
 
@@ -230,6 +241,7 @@ write_char  endp
 ; scan float, int part into ax, frac part into dx
 scan_float  proc    near
             push    cx
+            xor     dx, dx
             call    scan_int ; TODO scan float
             mov     ax, cx
             pop     cx
@@ -281,6 +293,16 @@ not_negative:
             pop     ax
             ret
 scan_int    endp
+
+; go to next line in terminal
+nxt_line    proc    near
+            mov ah, so
+            mov al, cr
+            int 10h
+            mov al, lf
+            int 10h
+            ret
+nxt_line    endp
 
 cseg    ends
         end     start
