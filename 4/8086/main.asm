@@ -4,7 +4,7 @@ dseg    segment
     so      equ 0Eh
     cr      equ 0Dh
     lf      equ 0Ah
-    len     equ 64
+    len     equ 16
     num1    db  len dup(0)
     num2    db  len dup(0)
     cnt1    db  0
@@ -34,6 +34,8 @@ input_ins:
     je      sum
     cmp     al, '-'
     je      subt
+    cmp     al, '*'
+    je      mult
 
 subt:
     call    swap_if_less
@@ -64,6 +66,34 @@ sum_loop:
     mov     res[bx+len-1], al
     dec     bx
     loop    sum_loop
+    jmp     output
+
+mult:
+    mov     bx, len
+mult_outer:
+    mov     si, len
+mult_inner:
+    mov     al, num1[bx-1]
+    mul     num2[si-1]
+    add     res[bx+si-1], al
+    dec     si
+    jnz     mult_inner 
+    dec     bx
+    jnz     mult_outer
+mult_norm:
+    mov     bx, 2*len
+norm_loop:
+    add     res[bx-1], ah
+adj_mul:
+    mov     al, res[bx-1]
+    aam
+    cmp     al, 10
+    jae     adj_mul
+    
+    mov     res[bx-1], al
+    dec     bx
+    jnz     norm_loop
+    
     jmp     output
     
 output:              
@@ -165,6 +195,6 @@ swap_done:
     pop     bx
     pop     ax
     ret
-swap_if_less    endp
-        end     start
+swap_if_less    endp 
 cseg    ends
+        end     start
