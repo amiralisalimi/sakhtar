@@ -62,6 +62,17 @@ multiply:
             mov     word ptr coeff_flt[bx], dx
                  
             loop    multiply
+            
+            mov     bx, cx
+            add     bx, cx
+            ; mov int part to ax, frac part to dx
+            mov     ax, word ptr coeff_int[bx]
+            mov     dx, word ptr coeff_flt[bx]
+            call    mul_float
+            ; store result in coeffs array
+            mov     word ptr coeff_int[bx], ax
+            mov     word ptr coeff_flt[bx], dx
+            
             jmp     print_result
 
 compute_integral:
@@ -94,7 +105,13 @@ print_coeff:
             
             call    nxt_line
             loop    print_coeff
-
+            
+            mov     bx, cx
+            add     bx, cx
+            mov     ax, word ptr coeff_int[bx]
+            mov     dx, word ptr coeff_flt[bx]
+            call    print_float
+            
             mov     ah, 4Ch
             int     21h
             ret
@@ -118,7 +135,9 @@ mul_float   endp
 ; dx : Fraction part
 ; cx : To be divided by
 div_float   proc    near
+            inc     cx
             idiv    cx
+            dec     cx
             xor     dx, dx
             ret
 div_float   endp
